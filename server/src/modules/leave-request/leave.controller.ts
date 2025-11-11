@@ -26,7 +26,7 @@ export const applyLeave = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// ✅ View Leaves (Employee sees own, Admin sees all)
+//  View Leaves (Employee sees own, Admin sees all)
 export const viewLeaves = async (req: AuthRequest, res: Response) => {
   try {
     const { id, role } = req.user!;
@@ -41,7 +41,7 @@ export const viewLeaves = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// ✅ Edit Leave (only if pending)
+//  Edit Leave (only if pending)
 export const editLeave = async (req: AuthRequest, res: Response) => {
   try {
     const { id: loggedInEmployeeId } = req.user!; 
@@ -76,7 +76,7 @@ export const editLeave = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// ✅ Cancel Leave
+// Cancel Leave
 export const cancelLeave = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.user!;

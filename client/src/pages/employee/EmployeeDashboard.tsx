@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import Header from "../../components/Header";
-import { useGetEmployeeDashboardSummaryQuery, useCancelLeaveRequestMutation, useApplyLeaveMutation } from "../../api/employeeLeaveApi";
+import {
+  useGetEmployeeDashboardSummaryQuery, useCancelLeaveRequestMutation,
+  useApplyLeaveMutation,
+  useEditLeaveMutation
+} from "../../api/employeeLeaveApi";
 // import { isSession } from "react-router-dom";
 const Home = () => {
 
@@ -8,14 +12,17 @@ const Home = () => {
     data: employeeData,
     isLoading: employeeLeaveDataLoading,
     isSuccess,
-    refetch,
+    // refetch,
   } = useGetEmployeeDashboardSummaryQuery(undefined, {
     refetchOnMountOrArgChange: true,  // unmount the component so that when another user logged in then the previous cached data will removed and current data will be shown
   });
   const [applyLeave, { isLoading: isApplying }] = useApplyLeaveMutation();
-
+  const [editLeave] = useEditLeaveMutation();
   const [cancelLeave, { isLoading: isCancelling }] = useCancelLeaveRequestMutation({});
   console.log(employeeData);
+
+  const [editMode, setEditMode] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     leaveType: "",
@@ -33,19 +40,48 @@ const Home = () => {
 
   // submitting leave request form:
   // submitting leave request form:
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
 
-    try {
-      await applyLeave(formData).unwrap();
-      alert("Leave Request Submitted Successfully!");
-      setFormData({ leaveType: "", fromDate: "", toDate: "", reason: "" });
-      setShowForm(false);
-    } catch (err: any) {
-      console.error("Leave apply failed:", err);
-      alert("Failed to apply leave. Please try again.");
-    }
+  //   try {
+  //     await applyLeave(formData).unwrap();
+  //     alert("Leave Request Submitted Successfully!");
+  //     setFormData({ leaveType: "", fromDate: "", toDate: "", reason: "" });
+  //     setShowForm(false);
+  //   } catch (err: any) {
+  //     console.error("Leave apply failed:", err);
+  //     alert("Failed to apply leave. Please try again.");
+  //   }
+  // };
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // Convert date inputs to ISO 8601 format
+  const payload = {
+    ...formData,
+    fromDate: new Date(formData.fromDate).toISOString(),
+    toDate: new Date(formData.toDate).toISOString(),
   };
+
+  try {
+    if (editMode && editingId) {
+      await editLeave({ id: editingId, data: payload }).unwrap();
+      alert("Leave updated successfully!");
+    } else {
+      await applyLeave(payload).unwrap();
+      alert("Leave request submitted successfully!");
+    }
+
+    setFormData({ leaveType: "", fromDate: "", toDate: "", reason: "" });
+    setShowForm(false);
+    setEditMode(false);
+    setEditingId(null);
+  } catch (err) {
+    console.error("Failed to submit leave:", err);
+    alert("Failed to submit leave");
+  }
+};
+
 
   const handleCancel = async (id: string) => {
     if (window.confirm("Are you sure you want to cancel this leave?")) {
@@ -193,6 +229,17 @@ const Home = () => {
                       <>
                         <button
                           className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition"
+                          onClick={() => {
+                            setEditMode(true);
+                            setEditingId(employeeLeaveData._id);
+                            setFormData({
+                              leaveType: employeeLeaveData.leaveType,
+                              fromDate: employeeLeaveData.fromDate.split("T")[0],
+                              toDate: employeeLeaveData.toDate.split("T")[0],
+                              reason: employeeLeaveData.reason,
+                            });
+                            setShowForm(true);
+                          }}
                         // onClick={() => handleApprove(leave._id)}
                         // disabled={isRejecting}
                         >Edit</button>

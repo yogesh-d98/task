@@ -12,11 +12,12 @@ export const createLeaveSchema = z.object({
 });
 
 export const updateLeaveSchema = z.object({
-  leaveType: z.string().optional(),
-  fromDate: z.string().optional(),
-  toDate: z.string().optional(),
-  reason: z.string().optional(),
+  leaveType: z.string().nonempty("Leave type is required"),
+  fromDate: z.string().nonempty("From date is required"),
+  toDate: z.string().nonempty("To date is required"),
+  reason: z.string().nonempty("Reason is required"),
 });
+
 
 export type CreateLeaveInput = z.infer<typeof createLeaveSchema>;
 export type UpdateLeaveInput = z.infer<typeof updateLeaveSchema>;
