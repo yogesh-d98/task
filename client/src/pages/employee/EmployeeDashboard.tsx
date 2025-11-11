@@ -1,18 +1,20 @@
 import React, { useState } from "react";
 import Header from "../../components/Header";
-import { useGetEmployeeDashboardSummaryQuery } from "../../api/employeeLeaveApi";
+import { useGetEmployeeDashboardSummaryQuery, useCancelLeaveRequestMutation, useApplyLeaveMutation } from "../../api/employeeLeaveApi";
 // import { isSession } from "react-router-dom";
 const Home = () => {
- 
-  const {
-  data: employeeData,
-  isLoading: employeeLeaveDataLoading,
-  isSuccess,
-  refetch,
-} = useGetEmployeeDashboardSummaryQuery(undefined, {
-  refetchOnMountOrArgChange: true,  // unmount the component so that when another user logged in then the previous cached data will removed and current data will be shown
-});
 
+  const {
+    data: employeeData,
+    isLoading: employeeLeaveDataLoading,
+    isSuccess,
+    refetch,
+  } = useGetEmployeeDashboardSummaryQuery(undefined, {
+    refetchOnMountOrArgChange: true,  // unmount the component so that when another user logged in then the previous cached data will removed and current data will be shown
+  });
+  const [applyLeave, { isLoading: isApplying }] = useApplyLeaveMutation();
+
+  const [cancelLeave, { isLoading: isCancelling }] = useCancelLeaveRequestMutation({});
   console.log(employeeData);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -21,7 +23,7 @@ const Home = () => {
     toDate: "",
     reason: "",
   });
-console.log(isSuccess , 'success loading')
+  console.log(isSuccess, 'success loading')
   if (employeeLeaveDataLoading) return <p className="p-4">Loading...</p>;
 
   // handle form input changes
@@ -30,14 +32,32 @@ console.log(isSuccess , 'success loading')
   };
 
   // submitting leave request form:
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); //preventing from re load when state updates 
-    console.log("Leave Request Submitted:", formData);
-    alert("Leave Request Submitted!");
-    setFormData({ leaveType: "", fromDate: "", toDate: "", reason: "" });
-    setShowForm(false);
+  // submitting leave request form:
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      await applyLeave(formData).unwrap();
+      alert("Leave Request Submitted Successfully!");
+      setFormData({ leaveType: "", fromDate: "", toDate: "", reason: "" });
+      setShowForm(false);
+    } catch (err: any) {
+      console.error("Leave apply failed:", err);
+      alert("Failed to apply leave. Please try again.");
+    }
   };
 
+  const handleCancel = async (id: string) => {
+    if (window.confirm("Are you sure you want to cancel this leave?")) {
+      try {
+        await cancelLeave(id).unwrap();
+        alert("Leave cancelled successfully!");
+      } catch (err) {
+        console.error("Approval failed:", err);
+        alert("Failed to approve leave");
+      }
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
@@ -123,10 +143,12 @@ console.log(isSuccess , 'success loading')
                   </button>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 transition"
+                    disabled={isApplying}
+                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition"
                   >
-                    Submit
+                    {isApplying ? "Submitting..." : "Submit"}
                   </button>
+
                 </div>
               </form>
             </div>
@@ -144,6 +166,7 @@ console.log(isSuccess , 'success loading')
               <th className="px-3 py-2">From</th>
               <th className="px-3 py-2">To</th>
               <th className="px-3 py-2">Status</th>
+              <th className="px-3 py-2">Reason</th>
               <th className="px-3 py-2">Actions</th>
 
             </tr>
@@ -163,8 +186,23 @@ console.log(isSuccess , 'success loading')
                     {new Date(employeeLeaveData.toDate).toLocaleDateString()}
                   </td>
                   <td className="px-3 py-2">{employeeLeaveData.status}</td>
-                  <td><button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition">Edit</button></td>
-                  <td><button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition">Cancel</button></td>
+                  <td className="px-3 py-2">{employeeLeaveData.reason}</td>
+
+                  <td>
+                    {employeeLeaveData.status === "Pending" &&
+                      <>
+                        <button
+                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition"
+                        // onClick={() => handleApprove(leave._id)}
+                        // disabled={isRejecting}
+                        >Edit</button>
+                        <button
+                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition"
+                          onClick={() => handleCancel(employeeLeaveData._id)}
+                          disabled={isCancelling}
+                        >Cancel</button>
+                      </>}
+                  </td>
 
                 </tr>
               ))

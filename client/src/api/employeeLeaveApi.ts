@@ -13,9 +13,28 @@ export const employeeLeaveApi = createApi({
       query: () => ({ url: '/leave/view', method: 'GET' }),
       providesTags: ['EmployeeLeaves'],
     }),
+     cancelLeaveRequest: builder.mutation<EmployeeDashboardSummary, string>({
+          query: (leaveId) => ({
+            url:`leave/cancel/${leaveId}`,
+            //  `/admin-leave/${leaveId}/approve`,
+            method: 'DELETE',
+          }),
+          invalidatesTags: ['EmployeeLeaves'],
+        }),
+        // Apply new leave
+    applyLeave: builder.mutation<any, Record<string, any>>({
+      query: (newLeaveData) => ({
+        url: "/leave/apply",
+        method: "POST",
+        body: newLeaveData,
+      }),
+      invalidatesTags: ["EmployeeLeaves"], 
+    }),
   }),
 });
 
 export const {
-useGetEmployeeDashboardSummaryQuery
+useGetEmployeeDashboardSummaryQuery,
+useCancelLeaveRequestMutation,
+useApplyLeaveMutation
 } = employeeLeaveApi;
